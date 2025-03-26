@@ -1,114 +1,72 @@
 # Moodle Request Logger Plugin  
 
-Plugin **Request Logger** adalah middleware untuk **Moodle** yang berfungsi mencatat setiap **HTTP request pengguna** dan mengirimkan log ke **Redis** untuk dianalisis lebih lanjut. Plugin ini mendukung pencatatan aktivitas **real-time**, membantu deteksi dini terhadap potensi ancaman, dan mempermudah pemantauan keamanan dalam sistem LMS.  
+Plugin **Request Logger** adalah middleware untuk **Moodle** yang mencatat **HTTP request pengguna** dan mengirimkan log ke **Redis** secara **real-time** untuk analisis keamanan.  
 
-## 📌 Fitur Utama  
-✅ **Logging HTTP request**: Mencatat semua aktivitas pengguna dalam Moodle (akses halaman, submission, interaksi lainnya).  
-✅ **Integrasi dengan Redis**: Menyimpan log secara efisien untuk mendukung analisis berbasis machine learning.  
-✅ **Client-Side & Server-Side Logging**: Memastikan semua request tercatat secara lengkap.  
-✅ **Kompatibel dengan Moodle 4.x** dan mendukung versi terbaru.  
+## 📌 Fitur  
+✅ **Logging otomatis** semua request pengguna (akses halaman, submission, dll.).  
+✅ **Integrasi Redis** untuk penyimpanan log efisien.  
+✅ **Dukungan Client-Side & Server-Side Logging**.  
+✅ **Kompatibel dengan Moodle 4.x**.  
 
 ---
 
-## 🛠 Persyaratan Sistem  
-
-Agar plugin ini dapat berjalan dengan optimal, pastikan lingkungan Moodle Anda memenuhi spesifikasi berikut:  
-
-### **Lingkungan Pengembangan**  
-- **Moodle 4.5.2**  
-- **PHP 8.2.24**  
-- **Redis 5.0.14.1** *(Direkomendasikan Redis 6.x+ untuk performa lebih baik)*  
-- **Ekstensi PHP Redis 6.1.0**  
-
-### **Spesifikasi Minimum untuk Instalasi**  
+## 🛠 Persyaratan  
 - **Moodle 4.1.2+**  
 - **PHP 7.4+**  
-- **Redis 5.0+** *(Disarankan Redis 6.x+ untuk performa optimal)*  
+- **Redis 5.0+** *(Direkomendasikan 6.x+ untuk performa lebih baik)*  
 - **Ekstensi PHP Redis 5.0+**  
 
 ---
 
 ## 🚀 Instalasi  
 
-Plugin ini dapat diinstal dengan **dua metode**:  
+### **1️⃣ Instalasi Melalui GUI**  
+1. Masuk ke **Site Administration → Plugins → Install plugins**.  
+2. Upload file **ZIP plugin**, klik **Install**.  
+3. Setelah validasi, klik **Upgrade Moodle database now**.  
 
-1. **Melalui GUI Moodle** *(Direkomendasikan untuk admin yang tidak terbiasa dengan CLI)*  
-2. **Melalui CLI (Command Line)** *(Cocok untuk server atau instalasi otomatis)*  
+### **2️⃣ Instalasi Melalui CLI**  
 
-### **1️⃣ Instalasi Melalui GUI (Site Administrator Moodle)**  
-
-1. Masuk ke **dashboard admin Moodle**.  
-2. Pilih menu **Site Administration → Plugins → Install plugins**.  
-3. Klik **Upload a plugin** dan pilih **file .zip** dari plugin ini.  
-4. Klik **Install plugin from the ZIP file**.  
-5. Jika proses berhasil, halaman validasi akan muncul. Klik **Continue**.  
-6. Moodle akan menampilkan detail plugin. Jika tidak ada error, klik **Upgrade Moodle database now**.  
-7. Tunggu hingga proses selesai, lalu klik **Continue**.  
-8. Plugin siap digunakan! 🎉  
+# Pindahkan plugin ke direktori Moodle
+```sh
+mv local_requestlogger /path/to/moodle/local/
+```
+# Jalankan instalasi
+```sh
+php admin/cli/install.php --plugin=local_requestlogger
+```
+# Bersihkan cache (opsional)
+```sh
+php admin/cli/purge_caches.php
+```
 
 ---
 
-### **2️⃣ Instalasi Melalui CLI (Command Line)**  
+## 🔗 **Download Plugin**  
+🔹 **[Unduh ZIP Plugin](https://drive.google.com/file/d/1RdKV9eHC3gmHR2iNRcME_jdFZsD1TWps/view?usp=sharing)**  
 
-Jika Anda menginstal plugin di server atau menggunakan script otomatis, gunakan langkah berikut:  
+---
 
-1. **Pindahkan plugin ke direktori Moodle**  
-   ```sh
-   mv local_requestlogger /path/to/moodle/local/
-
-# Jalankan perintah instalasi di terminal
-php admin/cli/install.php --plugin=local_requestlogger
-
-# Bersihkan cache Moodle (opsional, tetapi direkomendasikan)
-php admin/cli/purge_caches.php
-
-# Plugin sudah terinstall! 🎉
-
-## 🔗 **Download Plugin (ZIP File)**  
-
-Untuk mengunduh plugin dalam format **ZIP**, silakan akses melalui **Google Drive** berikut:  
-
-🔹 **[Download Request Logger Plugin](https://drive.google.com/your-plugin-link)**  
-
-
-
-## 📜 **Struktur Folder & File**  
-
-Plugin ini dikembangkan sesuai standar Moodle dengan struktur berikut:  
-
+## 📜 **Struktur Folder**  
 ```sh
 local_requestlogger/
-│── amd/
-│   ├── build/ (Output hasil build JavaScript menggunakan Grunt)
-│   │   ├── formlogger.min.js
-│   │   ├── formlogger.min.js.map
-│   ├── src/ (Kode sumber JavaScript sebelum dibuild)
-│   │   ├── formlogger.js
-│── classes/
-│   ├── logger.php  (Kelas utama untuk logging request)
-│   ├── output/
-│   │   ├── renderer.php (Menambahkan script logger ke halaman Moodle)
-│── lang/
-│   ├── en/local_requestlogger.php (String bahasa Inggris)
-│── lib.php  (Fungsi utama untuk hooking request)
-│── log.php  (Endpoint untuk menangkap dan meneruskan log ke Redis)
-│── version.php  (Informasi versi plugin)
+│── amd/ (JavaScript logger)
+│── classes/ (Logger utama)
+│── lang/ (Dukungan bahasa)
+│── lib.php (Fungsi utama)
+│── log.php (Endpoint log ke Redis)
+│── version.php (Info plugin)
 ```
 
 ---
 
-## ⚠ **Catatan Penting**  
+## ⚠ **Catatan**  
+- **Pastikan Redis berjalan** sebelum menggunakan plugin.  
+- **Gunakan Moodle 4.x ke atas** untuk kompatibilitas terbaik.  
+- Jika mengalami kendala, periksa **log error di Moodle/Redis**.  
 
-- Pastikan Redis sudah berjalan di server Moodle sebelum menggunakan plugin ini.  
-- Jika mengalami kendala, periksa **log error di Moodle atau Redis** untuk troubleshooting.  
-- Gunakan versi **Moodle 4.x ke atas** untuk kompatibilitas terbaik.  
-
-📧 Jika ada pertanyaan atau ingin berkontribusi, silakan buka **issue di repository ini**!  
-
----
-
-**© 2025 – Moodle Request Logger Plugin**  
-_Dikembangkan oleh Muhamad Masayid Alfarizqi_  
-```
+📧 Jika ada pertanyaan, silakan buka **issue di repository ini**!  
 
 ---
+
+**© 2025 – Moodle Request Logger Plugin**

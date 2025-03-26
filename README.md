@@ -63,9 +63,6 @@ php admin/cli/install.php --plugin=local_requestlogger
 php admin/cli/purge_caches.php
 
 # Plugin sudah terinstall! 🎉
-```
-
----
 
 ## 🔗 **Download Plugin (ZIP File)**  
 
@@ -73,7 +70,7 @@ Untuk mengunduh plugin dalam format **ZIP**, silakan akses melalui **Google Driv
 
 🔹 **[Download Request Logger Plugin](https://drive.google.com/your-plugin-link)**  
 
----
+
 
 ## 📜 **Struktur Folder & File**  
 

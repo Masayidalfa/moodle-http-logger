@@ -1,6 +1,7 @@
 <?php
 require_once('../../config.php');
-defined('MOODLE_INTERNAL') || die();
+
+defined('MOODLE_INTERNAL') && die();
 
 // Hanya terima request POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -9,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Deteksi Content-Type dan ambil data dari request
+// Ambil data sesuai Content-Type
 $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
 if (strpos($contentType, 'application/json') !== false) {
     $rawdata = file_get_contents('php://input');
@@ -20,42 +21,42 @@ if (strpos($contentType, 'application/json') !== false) {
     parse_str(file_get_contents("php://input"), $data);
 }
 
-// Ambil informasi dasar request
-$userid = isset($data['userid']) ? intval($data['userid']) : 0;
-$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-$url = $_SERVER['HTTP_REFERER'] ?? 'unknown';
+// Ambil informasi request
+$userid         = isset($data['userid']) ? (int)$data['userid'] : 0;
+$ip             = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$url            = $_SERVER['HTTP_REFERER'] ?? 'unknown';
 $request_method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
 
-// Buat timestamp dengan format "dd/mm/YYYY HH:ii:ss.mmm"
-$micro = microtime(true);
-$date = date("d/m/Y H:i:s", $micro);
-$milliseconds = sprintf("%03d", ($micro - floor($micro)) * 1000);
-$timestamp = $date . '.' . $milliseconds;
+// Buat timestamp dengan format presisi milidetik
+$micro     = microtime(true);
+$datetime  = date("d/m/Y H:i:s", (int)$micro);
+$millisec  = sprintf("%03d", ($micro - floor($micro)) * 1000);
+$timestamp = $datetime . '.' . $millisec;
 
-// Susun payload sebagai array
+// Susun payload
 $payloadData = [
     "method" => $request_method,
     "url"    => $url,
     "body"   => $data
 ];
-$payload = json_encode($payloadData, JSON_PRETTY_PRINT);
 
-// Buat objek record untuk disimpan
-$record = new stdClass();
-$record->userid    = $userid;
-$record->ip        = $ip;
-$record->timestamp = $timestamp;
-$record->payload   = $payload;
+$record = (object)[
+    'userid'    => $userid,
+    'ip'        => $ip,
+    'timestamp' => $timestamp,
+    'payload'   => json_encode($payloadData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+];
 
-// Kirim respon JSON
+// Kirim respon JSON ke klien
 header('Content-Type: application/json');
 echo json_encode(['status' => 'success']);
 
-// Koneksi ke Redis dan publish data log ke channel "moodle_logs"
+// Publish log ke Redis (jika tersedia)
 try {
     $redis = new \Redis();
     $redis->connect('127.0.0.1', 6379);
     $redis->publish('moodle_logs', json_encode($record));
-} catch (\Exception $e) {
+} catch (\Throwable $e) {
+    // Hanya log internal error, tidak tampilkan ke user
     error_log('Redis error (log.php): ' . $e->getMessage());
 }

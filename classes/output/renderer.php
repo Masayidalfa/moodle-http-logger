@@ -1,20 +1,22 @@
 <?php
 namespace local_requestlogger\output;
+
 use plugin_renderer_base;
 
 class renderer extends plugin_renderer_base {
+    /**
+     * Menyisipkan JavaScript secara langsung untuk memuat modul AMD formlogger.
+     * Fungsi ini digunakan khusus pada halaman login.
+     *
+     * @return string HTML <script> untuk inisialisasi formlogger
+     */
     public function render_footer() {
         return "<script>
             document.addEventListener('DOMContentLoaded', function() {
-                console.log('⏳ Menunggu RequireJS...');
                 require(['local_requestlogger/formlogger'], function(module) {
-                    console.log('✅ Plugin formlogger otomatis dimuat di halaman login...');
                     module.init();
-                }, function(err) {
-                    console.error('❌ Plugin tidak bisa dimuat:', err);
                 });
             });
         </script>";
     }
 }
-?>

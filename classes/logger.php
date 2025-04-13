@@ -2,67 +2,61 @@
 
 namespace local_requestlogger;
 
-defined('MOODLE_INTERNAL') || die(); // mencegah file diakses langsung
+defined('MOODLE_INTERNAL') || die(); // Cegah akses langsung ke file
 
 class logger {
+    /**
+     * Mencatat data request saat halaman dimuat.
+     * Data dikirim ke Redis dalam format JSON.
+     */
     public static function log_request() {
         global $USER;
 
-        // Ambil IP address
-        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $request_method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
-        $url = $_SERVER['REQUEST_URI'] ?? 'unknown';
-        $user_id = $USER->id ?? 0;
+        // Informasi dasar
+        $ip_address      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $request_method  = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
+        $url             = $_SERVER['REQUEST_URI'] ?? 'unknown';
+        $user_id         = $USER->id ?? 0;
 
-        //membuat timmestamp dengan format yang mudah dibaca
-        $micro = microtime(true);
-        $date = date("d/m/Y H:i:s", $micro);
-        $milliseconds = sprintf("%03d", ($micro - floor($micro)) * 1000);
-        $timestamp = $date . '.' . $milliseconds;
+        // Buat timestamp presisi milidetik
+        $micro      = microtime(true);
+        $datetime   = date("d/m/Y H:i:s", (int)$micro);
+        $millisec   = sprintf("%03d", ($micro - floor($micro)) * 1000);
+        $timestamp  = "{$datetime}.{$millisec}";
 
-        // Ambil body request berdasarkan method
+        // Ambil body sesuai metode HTTP
         $body = null;
         if (in_array($request_method, ['POST', 'PUT', 'DELETE', 'PATCH'])) {
-            // Cek apakah ada data di $_POST
-            if (!empty($_POST)) {
-                $body = $_POST;
-            } else {
-                // Jika tidak, coba ambil data mentah
-                $rawdata = file_get_contents('php://input');
-                // Jika data mentah berupa JSON, coba decode
-                $decoded = json_decode($rawdata, true);
-                $body = ($decoded !== null) ? $decoded : $rawdata;
-            }
+            $rawdata = file_get_contents('php://input');
+            $decoded = json_decode($rawdata, true);
+
+            // Gunakan POST jika tersedia, fallback ke data mentah
+            $body = !empty($_POST) ? $_POST : ($decoded ?? $rawdata);
         } else {
-            // Untuk GET, ambil query string (jika ada)
             $body = $_SERVER['QUERY_STRING'] ?? '';
         }
 
-        // Susun payload sebagai array yang berisi method, URL, dan body message
-        $payloadData = array(
-            "method" => $request_method,
-            "url"    => $url,
-            "body"   => $body
-        );
-        $payload = json_encode($payloadData, JSON_PRETTY_PRINT);
+        // Susun payload
+        $payloadData = [
+            'method' => $request_method,
+            'url'    => $url,
+            'body'   => $body
+        ];
 
-        // Buat objek record log yang akan disimpan ke database
-        $record = new \stdClass();
-        $record->userid    = $user_id;
-        $record->ip        = $ip_address;
-        $record->timestamp = $timestamp;
-        $record->payload   = $payload;
+        $record = (object)[
+            'userid'    => $user_id,
+            'ip'        => $ip_address,
+            'timestamp' => $timestamp,
+            'payload'   => json_encode($payloadData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        ];
 
-        // ------------------------------------------------------------------
-        // Koneksi ke Redis dan publish data log ke channel "moodle_logs"
-        // ------------------------------------------------------------------
+        // Kirim ke Redis
         try {
             $redis = new \Redis();
             $redis->connect('127.0.0.1', 6379);
-
-            // Publish log sebagai JSON ke channel "moodle_logs"
             $redis->publish('moodle_logs', json_encode($record));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // Log error internal tanpa tampil ke user
             error_log('Redis error (logger.php): ' . $e->getMessage());
         }
     }

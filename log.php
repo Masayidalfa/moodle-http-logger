@@ -1,7 +1,7 @@
 <?php
 require_once('../../config.php');
 
-defined('MOODLE_INTERNAL') && die();
+defined('MOODLE_INTERNAL') || die();
 
 // Hanya terima request POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -40,12 +40,11 @@ $payloadData = [
     "body"   => $data
 ];
 
-$record = (object)[
-    'userid'    => $userid,
-    'ip'        => $ip,
-    'timestamp' => $timestamp,
-    'payload'   => json_encode($payloadData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-];
+$record = new \stdClass();
+        $record->userid    = $userid;
+        $record->ip        = $ip;
+        $record->timestamp = $timestamp;
+        $record->payloadData   = $payloadData;
 
 // Kirim respon JSON ke klien
 header('Content-Type: application/json');
@@ -60,3 +59,5 @@ try {
     // Hanya log internal error, tidak tampilkan ke user
     error_log('Redis error (log.php): ' . $e->getMessage());
 }
+
+?>

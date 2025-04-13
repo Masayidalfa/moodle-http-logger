@@ -43,12 +43,11 @@ class logger {
             'body'   => $body
         ];
 
-        $record = (object)[
-            'userid'    => $user_id,
-            'ip'        => $ip_address,
-            'timestamp' => $timestamp,
-            'payload'   => json_encode($payloadData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-        ];
+        $record = new \stdClass();
+        $record->user_id       = $user_id;
+        $record->ip_address    = $ip_address;
+        $record->timestamp     = $timestamp;
+        $record->payloadData   = $payloadData;
 
         // Kirim ke Redis
         try {
@@ -61,3 +60,5 @@ class logger {
         }
     }
 }
+
+?>

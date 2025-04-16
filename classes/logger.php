@@ -27,13 +27,9 @@ class logger {
         // Ambil body sesuai metode HTTP
         $body = null;
         if (in_array($request_method, ['POST', 'PUT', 'DELETE', 'PATCH'])) {
-            $rawdata = file_get_contents('php://input');
-            $decoded = json_decode($rawdata, true);
-
-            // Gunakan POST jika tersedia, fallback ke data mentah
-            $body = !empty($_POST) ? $_POST : ($decoded ?? $rawdata);
+            $body = file_get_contents('php://input');
         } else {
-            $body = $_SERVER['QUERY_STRING'] ?? '';
+            $body = urldecode($_SERVER['QUERY_STRING'] ?? '');
         }
 
         // Susun payload

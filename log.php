@@ -65,15 +65,6 @@ try {
 
     $redis = new \Redis();
     $redis->connect($host, (int)$port);
-        // Filter: jika body kosong (tidak ada input yang dikirim), skip publish
-    if (empty($data) || (is_array($data) && count(array_filter($data, function ($val) {
-        return !empty($val) && $val !== '';
-    })) === 0)) {
-        // Log local optional untuk debug
-        error_log('Log dilewati karena body kosong.');
-        exit; // Stop sebelum mengirim ke Redis
-    }
-
     $redis->publish($channel, json_encode($record));
 
 } catch (\Throwable $e) {

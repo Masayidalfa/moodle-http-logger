@@ -40,6 +40,12 @@ function local_requestlogger_before_footer() {
         return $renderer->render_footer();
     }
 
+    $url = $PAGE->url->out_as_local_url(false);
+    if (strpos($url, '/mod/assign/view.php') !== false && strpos($url, 'action=grader') !== false) {
+        $renderer = $PAGE->get_renderer('local_requestlogger');
+        return $renderer->render_footer();
+    }
+    
     return '';
 }
 

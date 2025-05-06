@@ -6,7 +6,7 @@ define([], function() {
 
             /**
              * Menambahkan event listener ke elemen form untuk menangkap perubahan nilai input.
-             * @param {HTMLFormElement} form 
+             * @param {HTMLFormElement} form
              */
             function attachFieldsetListeners(form) {
                 let fieldsetElements = form.querySelectorAll('fieldset input, fieldset select, fieldset textarea');
@@ -24,7 +24,7 @@ define([], function() {
 
             /**
              * Mengumpulkan dan mengirim data form ke server melalui fetch atau Beacon API.
-             * @param {HTMLFormElement} form 
+             * @param {HTMLFormElement} form
              */
             function logFormData(form) {
                 if (!form || form.dataset.loggedOnce) return;
@@ -58,14 +58,18 @@ define([], function() {
                 }
             }
 
-            // Menangani semua event form submit dengan metode POST
+            /**
+             * Menangani semua event form submit dengan metode POST
+             */
             document.addEventListener('submit', function(event) {
                 let form = event.target;
                 if (!form.method || form.method.toLowerCase() !== 'post') return;
                 logFormData(form);
             }, true);
 
-            // Menangani form dalam modal kalender (khusus untuk fitur event Moodle)
+            /**
+             * Menangani form dalam modal kalender (khusus untuk fitur event Moodle)
+             */
             document.addEventListener('click', function(event) {
                 let target = event.target.closest('button[data-action="save"]');
                 if (!target) return;
@@ -95,46 +99,44 @@ define([], function() {
             }, true);
 
             /**
-             * Mengamati perubahan DOM untuk mendeteksi kemunculan modal kalender
-             * dan menambahkan listener ke form yang muncul.
+             * Mengamati elemen form baru yang ditambahkan ke DOM secara dinamis (misalnya via AJAX)
              */
-            function observeModal() {
-                let observer = new MutationObserver(mutationsList => {
-                    mutationsList.forEach(mutation => {
+            function observeNewForms() {
+                const observer = new MutationObserver(mutations => {
+                    mutations.forEach(mutation => {
                         mutation.addedNodes.forEach(node => {
-                            if (node.nodeType === 1 && node.matches('.modal.show .mform')) {
-                                attachFieldsetListeners(node);
-                            }
-                        });
-
-                        mutation.removedNodes.forEach(node => {
-                            if (node.nodeType === 1 && node.matches('.modal.show')) {
-                                observer.disconnect();
+                            if (node.nodeType === 1) {
+                                if (node.tagName === 'FORM') {
+                                    logFormData(node);
+                                } else {
+                                    let forms = node.querySelectorAll?.('form') || [];
+                                    forms.forEach(form => logFormData(form));
+                                }
                             }
                         });
                     });
                 });
 
-                observer.observe(document.body, { childList: true, subtree: true });
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
             }
 
-            // Memulai observer saat tombol "New Event" ditekan
-            document.addEventListener('click', function(event) {
-                let newEventButton = event.target.closest('button[data-action="new-event-button"]');
-                if (!newEventButton) return;
-                observeModal();
-            });
+            // Jalankan observer form AJAX
+            observeNewForms();
 
-            /**
-             * Override fungsi fetch (opsional) hanya untuk tujuan debugging di awal pengembangan.
-             * Baris ini dibiarkan nonaktif, dan dapat dihapus di produksi.
-             */
+            // Catat semua form awal saat halaman pertama kali dimuat
+            document.querySelectorAll('form').forEach(form => logFormData(form));
+
+            // Debugging helper fetch override (nonaktif secara default)
             // (function() {
             //     let originalFetch = window.fetch;
             //     window.fetch = function(url, options) {
             //         return originalFetch.apply(this, arguments);
             //     };
             // })();
+
         }
     };
 });

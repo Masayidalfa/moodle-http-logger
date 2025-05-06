@@ -27,6 +27,13 @@ $ip             = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 $url            = $_SERVER['HTTP_REFERER'] ?? 'unknown';
 $request_method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
 
+// Decode pageurl jika tersedia
+$decodedPageUrl = '';
+if (isset($data['pageurl'])) {
+    $decodedPageUrl = urldecode($data['pageurl']);
+    $data['pageurl'] = $decodedPageUrl; // Replace encoded version with readable one
+}
+
 // Buat timestamp dengan format presisi milidetik
 $micro     = microtime(true);
 $datetime  = date("d/m/Y H:i:s", (int)$micro);
@@ -36,15 +43,15 @@ $timestamp = $datetime . '.' . $millisec;
 // Susun payload
 $payloadData = [
     "method" => $request_method,
-    "url"    => $url,
+    "url"    => $decodedPageUrl ?: $url,
     "body"   => $data
 ];
 
 $record = new \stdClass();
-        $record->userid    = $userid;
-        $record->ip        = $ip;
-        $record->timestamp = $timestamp;
-        $record->payloadData   = $payloadData;
+$record->userid       = $userid;
+$record->ip           = $ip;
+$record->timestamp    = $timestamp;
+$record->payloadData  = $payloadData;
 
 // Kirim respon JSON ke klien
 header('Content-Type: application/json');
@@ -52,11 +59,24 @@ echo json_encode(['status' => 'success']);
 
 // Publish log ke Redis (jika tersedia)
 try {
+    $host = get_config('local_requestlogger', 'redis_host') ?: '127.0.0.1';
+    $port = get_config('local_requestlogger', 'redis_port') ?: 6379;
+    $channel = get_config('local_requestlogger', 'redis_channel') ?: 'moodle_logs';
+
     $redis = new \Redis();
-    $redis->connect('127.0.0.1', 6379);
-    $redis->publish('moodle_logs', json_encode($record));
+    $redis->connect($host, (int)$port);
+        // Filter: jika body kosong (tidak ada input yang dikirim), skip publish
+    if (empty($data) || (is_array($data) && count(array_filter($data, function ($val) {
+        return !empty($val) && $val !== '';
+    })) === 0)) {
+        // Log local optional untuk debug
+        error_log('Log dilewati karena body kosong.');
+        exit; // Stop sebelum mengirim ke Redis
+    }
+
+    $redis->publish($channel, json_encode($record));
+
 } catch (\Throwable $e) {
-    // Hanya log internal error, tidak tampilkan ke user
     error_log('Redis error (log.php): ' . $e->getMessage());
 }
 

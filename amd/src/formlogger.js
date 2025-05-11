@@ -68,37 +68,6 @@ define([], function() {
             }, true);
 
             /**
-             * Menangani form dalam modal kalender (khusus untuk fitur event Moodle)
-             */
-            document.addEventListener('click', function(event) {
-                let target = event.target.closest('button[data-action="save"]');
-                if (!target) return;
-
-                let modal = document.querySelector('.modal.show');
-                if (!modal) return;
-
-                let form = modal.querySelector('.mform');
-                if (!form) {
-                    let waitForForm = setInterval(() => {
-                        let newModal = document.querySelector('.modal.show');
-                        if (newModal) {
-                            let newForm = newModal.querySelector('.mform');
-                            if (newForm) {
-                                clearInterval(waitForForm);
-                                logFormData(newForm);
-                            }
-                        } else {
-                            clearInterval(waitForForm);
-                        }
-                    }, 300);
-
-                    setTimeout(() => clearInterval(waitForForm), 3000);
-                } else {
-                    logFormData(form);
-                }
-            }, true);
-
-            /**
              * Mengamati elemen form baru yang ditambahkan ke DOM secara dinamis (misalnya via AJAX)
              */
             function observeNewForms() {
@@ -128,15 +97,6 @@ define([], function() {
 
             // Catat semua form awal saat halaman pertama kali dimuat
             document.querySelectorAll('form').forEach(form => logFormData(form));
-
-            // Debugging helper fetch override (nonaktif secara default)
-            // (function() {
-            //     let originalFetch = window.fetch;
-            //     window.fetch = function(url, options) {
-            //         return originalFetch.apply(this, arguments);
-            //     };
-            // })();
-
         }
     };
 });

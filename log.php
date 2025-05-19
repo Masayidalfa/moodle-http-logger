@@ -31,7 +31,7 @@ $request_method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
 $decodedPageUrl = '';
 if (isset($data['pageurl'])) {
     $decodedPageUrl = urldecode($data['pageurl']);
-    $data['pageurl'] = $decodedPageUrl; // Replace encoded version with readable one
+    $data['pageurl'] = $decodedPageUrl;
 }
 
 // Buat timestamp dengan format presisi milidetik

@@ -12,10 +12,6 @@ class logger {
     public static function log_request() {
         global $USER;
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            return; // Hindari duplikasi, karena POST ditangani oleh log.php via JS
-        }
-
         // Informasi dasar
         $ip_address      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $request_method  = $_SERVER['REQUEST_METHOD'] ?? 'unknown';

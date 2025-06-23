@@ -1,11 +1,10 @@
 <?php
-defined('MOODLE_INTERNAL') || die(); //mencegah file diakse melalu browser
+defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_requestlogger'; //Nama Plugin
-$plugin->version = 2025045600;              //Versi Plugin
-$plugin->requires = 2021051700;             //Moodle Minimal Versi 3.11
-$plugin->maturity = MATURITY_ALPHA;         //Versi Awal, Mungkin Masih Banyak Bug
-$plugin->release = '1.0.0';                 //Major Version
-$plugin->settings = true;                   //Dapat diatur secara GUI
+$plugin->component = 'local_http_logger';
+$plugin->version = 2025060801;
+$plugin->requires = 2020110900;
+$plugin->maturity = MATURITY_ALPHA;
+$plugin->release = '0.2';
 
 ?>

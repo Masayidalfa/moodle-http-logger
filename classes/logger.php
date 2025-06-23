@@ -1,68 +1,71 @@
 <?php
+namespace local_http_logger;
 
-namespace local_requestlogger;
-
-defined('MOODLE_INTERNAL') || die(); // Cegah akses langsung ke file
+defined('MOODLE_INTERNAL') || die();
 
 class logger {
-    /**
-     * Mencatat data request saat halaman dimuat.
-     * Data dikirim ke Redis dalam format JSON.
-     */
     public static function log_request() {
-        global $USER;
+        $timestamp = time();
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN';
+        $url = $_SERVER['REQUEST_URI'] ?? '';
+        $payload = '';
 
-        // Informasi dasar
-        $ip_address      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $request_method  = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
-        $url             = $_SERVER['REQUEST_URI'] ?? 'unknown';
-        $user_id         = $USER->id ?? 0;
-
-        // Buat timestamp presisi milidetik
-        $micro      = microtime(true);
-        $datetime   = date("d/m/Y H:i:s", (int)$micro);
-        $millisec   = sprintf("%03d", ($micro - floor($micro)) * 1000);
-        $timestamp  = "{$datetime}.{$millisec}";
-
-        // Ambil body sesuai metode HTTP
-        $body = null;
-        if (in_array($request_method, ['POST', 'PUT', 'DELETE', 'PATCH'])) {
-            $body = file_get_contents('php://input');
-            if (empty($body)) {
-                $body = json_encode($_POST);
-            }
-        } else {
-            $body = urldecode($_SERVER['QUERY_STRING'] ?? '');
+        // Ambil payload
+        if ($method === 'POST') {
+            $payload = file_get_contents('php://input');
+        } elseif ($method === 'GET') {
+            $payload = json_encode($_GET);
         }
 
+        // Status code tidak bisa didapat langsung
+        $status_code = null;
 
-        // Susun payload
-        $payloadData = [
-            'method' => $request_method,
-            'url'    => $url,
-            'body'   => $body
+        $logdata = [
+            'timestamp'    => $timestamp,
+            'ip_address'   => $ip,
+            'method'       => $method,
+            'url'          => $url,
+            'status_code'  => $status_code,
+            'payload'      => $payload
         ];
 
-        $record = new \stdClass();
-        $record->user_id       = $user_id;
-        $record->ip_address    = $ip_address;
-        $record->timestamp     = $timestamp;
-        $record->payloadData   = $payloadData;
+        self::publish_to_redis($logdata);
+    }
 
-        // Kirim ke Redis
-        try {
-            $host = get_config('local_requestlogger', 'redis_host') ?: '127.0.0.1';
-            $port = get_config('local_requestlogger', 'redis_port') ?: 6379;
-            $channel = get_config('local_requestlogger', 'redis_channel') ?: 'moodle_logs';
+    private static function publish_to_redis(array $data) {
+    try {
+        $redis = new \Redis();
+        $host = get_config('local_http_logger', 'redis_host') ?: '127.0.0.1';
+        $port = get_config('local_http_logger', 'redis_port') ?: 6379;
+        $channel = get_config('local_http_logger', 'redis_channel') ?: 'http_logs';
+        $dedupTTL = 5;
+
+        $redis->connect($host, (int)$port);
+
+        // Salin log tanpa timestamp untuk membuat hash isi log
+        $logForHash = $data;
+        unset($logForHash['timestamp']);
+
+        // Sort key agar hasil hash konsisten
+        ksort($logForHash);
+        $logString = json_encode($logForHash);
+        $logHash = hash('sha256', $logString);
+
+        // Cek apakah hash sudah ada (duplikat)
+        if (!$redis->exists($logHash)) {
+            // Simpan hash ke Redis dengan TTL
+            $redis->setex($logHash, $dedupTTL, 1);
+            // Kirim log ke channel Redis
+            $redis->publish($channel, json_encode($data));
+        } else {
             
-            $redis = new \Redis();
-            $redis->connect($host, (int)$port);
-            $redis->publish($channel, json_encode($record));
-        } catch (\Throwable $e) {
-            // Log error internal tanpa tampil ke user
-            error_log('Redis error (logger.php): ' . $e->getMessage());
         }
+    } catch (\Exception $e) {
+        debugging('Redis publish error: ' . $e->getMessage(), DEBUG_DEVELOPER);
     }
 }
 
+
+}
 ?>
